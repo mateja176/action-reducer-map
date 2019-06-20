@@ -65,8 +65,22 @@ const createSlice = <ARM extends ActionReducerMap>({
   const slice: Slice<SliceReducer, SliceActions> = {
     reducer,
     actions: Object.keys(reducers).reduce(
-      // TODO add ternary
-      (actions, type) => ({ ...actions, [type]: () => ({ type }) }),
+      (actions, type) => ({
+        ...actions,
+        [type]: (() => {
+          let hasPayload = false;
+
+          try {
+            reducer(undefined, undefined);
+          } catch {
+            hasPayload = true;
+          }
+
+          return hasPayload
+            ? createPayloadActionCreator(type)
+            : createActionCreator(type);
+        })(),
+      }),
       {} as SliceActions,
     ),
   };
