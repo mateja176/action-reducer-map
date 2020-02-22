@@ -10,6 +10,8 @@
   "author": "Mateja Petrovic <mateja176@gmail.com> (https://github.com/mateja176)",
   "license": "ISC",
   "dependencies": {
-    "redux": "^4.0.1"
+    "redux": "^4.0.1",
+    "redux-actions": "^2.6.5",
+    "typesafe-actions": "^5.1.0"
   }
 }
