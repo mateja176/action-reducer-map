@@ -1,117 +1,33 @@
-import { Action, AnyAction, Reducer } from 'redux';
+import { Action, Reducer } from 'redux';
+import { PayloadAction } from 'typesafe-actions';
 
-interface PayloadAction<Type, Payload> extends Action<Type> {
-  payload: Payload;
-}
+type StringAction = Action<string>;
 
-type AnyPayloadAction = PayloadAction<string, any>;
+type FilterActionByType<
+  A extends StringAction,
+  Type extends A['type']
+> = A extends Action<Type> ? A : never;
 
-type GenericReducer = Reducer<{}, AnyAction>;
-
-interface ActionReducerMap {
-  [key: string]: GenericReducer;
-}
-
-type CreateAction<Type> = () => Action<Type>;
-type CreatePayloadAction<Type, Payload> = (
-  payload: Payload,
-) => PayloadAction<Type, Payload>;
-
-type CreateActionCreator = <Type>(type: Type) => CreateAction<Type>;
-
-const createActionCreator: CreateActionCreator = type => () => ({ type });
-
-type CreatePayloadActionCreator = <Type, Payload>(
-  type: Type,
-) => CreatePayloadAction<Type, Payload>;
-
-const createPayloadActionCreator: CreatePayloadActionCreator = type => payload => ({
-  type,
-  payload,
-});
-
-interface SliceConfig<ARM extends ActionReducerMap> {
-  reducers: ARM;
-}
-
-interface Slice<R extends GenericReducer, A extends { [type: string]: any }> {
-  reducer: R;
-  actions: A;
-}
-
-const createSlice = <ARM extends ActionReducerMap>({
-  reducers,
-}: SliceConfig<ARM>) => {
-  type StateAndActions = Parameters<ARM[keyof ARM]>;
-
-  type SliceReducer = Reducer<StateAndActions['0'], StateAndActions['1']>;
-
-  const reducer: SliceReducer = (state, action) =>
-    reducers[action.type](state, action);
-
-  type Reducers = typeof reducers;
-
-  type SliceActions = {
-    [type in keyof Reducers]: Parameters<
-      Reducers[type]
-    >['1'] extends AnyPayloadAction
-      ? CreatePayloadAction<
-          Parameters<Reducers[type]>['1']['type'],
-          Parameters<Reducers[type]>['1']['payload']
-        >
-      : CreateAction<Parameters<Reducers[type]>['1']['type']>
-  };
-
-  const slice: Slice<SliceReducer, SliceActions> = {
-    reducer,
-    actions: Object.keys(reducers).reduce(
-      (actions, type) => ({
-        ...actions,
-        [type]: (() => {
-          let hasPayload = false;
-
-          try {
-            reducer(undefined, undefined);
-          } catch {
-            hasPayload = true;
-          }
-
-          return hasPayload
-            ? createPayloadActionCreator(type)
-            : createActionCreator(type);
-        })(),
-      }),
-      {} as SliceActions,
-    ),
-  };
-
-  return slice;
-};
-
-const {
-  reducer,
-  actions: { increment, decrementBy },
-} = createSlice<{
-  increment: Reducer<number, Action<'increment'>>;
-  decrementBy: Reducer<number, PayloadAction<'decrementBy', number>>;
-}>({
-  reducers: {
-    increment: state => state + 1,
-    decrementBy: (state, { payload }) => state + payload,
+type CreateReducer = <State extends {}>(
+  initialState: State,
+) => <A extends StringAction>(
+  arm: {
+    [Type in A['type']]: (
+      state: State,
+      action: FilterActionByType<A, Type>,
+    ) => State;
   },
-});
+) => Reducer<State, A>;
+const createReducer: CreateReducer = initialState => arm => (
+  state = initialState,
+  action,
+) => arm[action.type](state, action);
 
-const incrementAction = increment();
-
-const {
-  reducer: reducer1,
-  actions: { increment: increment1, decrementBy: decrementBy1 },
-} = createSlice({
-  reducers: {
-    increment: (state: number, action: Action<'increment'>) => state + 1,
-    decrementBy: (
-      state: number,
-      { payload }: PayloadAction<'decrement', number>,
-    ) => state + payload,
-  },
+type Count = number;
+const initialCountState: Count = 0;
+const countReducer = createReducer(initialCountState)<
+  Action<'increment'> | PayloadAction<'decrement', Count>
+>({
+  increment: state => state + 1,
+  decrement: (state, action) => state - action.payload,
 });
