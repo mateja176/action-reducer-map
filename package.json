@@ -10,8 +10,12 @@
   "author": "Mateja Petrovic <mateja176@gmail.com> (https://github.com/mateja176)",
   "license": "ISC",
   "dependencies": {
+    "ramda": "^0.27.0",
     "redux": "^4.0.1",
     "redux-actions": "^2.6.5",
     "typesafe-actions": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/ramda": "^0.26.41"
   }
 }

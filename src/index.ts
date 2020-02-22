@@ -1,3 +1,4 @@
+import { identity } from 'ramda';
 import { Action, Reducer } from 'redux';
 import { PayloadAction } from 'typesafe-actions';
 
@@ -21,7 +22,7 @@ type CreateReducer = <State extends {}>(
 const createReducer: CreateReducer = initialState => arm => (
   state = initialState,
   action,
-) => arm[action.type](state, action);
+) => (arm[action.type] || identity)(state, action);
 
 type Count = number;
 const initialCountState: Count = 0;
